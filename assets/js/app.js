@@ -8,6 +8,7 @@ const addRowBtn = document.getElementById('addRow');
 const searchEl = document.getElementById('globalSearch');
 const columnFilterEl = document.getElementById('columnFilter');
 
+// Helper to render HTML for menu icons
 function renderIconHtml(iconVal, fallbackPath) {
     const icon = iconVal || fallbackPath;
     if (icon.includes('/') || icon.includes('.')) {
@@ -16,12 +17,12 @@ function renderIconHtml(iconVal, fallbackPath) {
     return `<span style="font-size:1.2em; margin-right:8px; vertical-align:middle;">${icon}</span>`;
 }
 
-// Initialize application
+// Initialize application on DOM load
 document.addEventListener('DOMContentLoaded', async () => {
     if (typeof schema !== 'undefined' && Object.keys(schema.tables).length > 0) {
         const firstTableName = Object.keys(schema.tables)[0];
         
-        // Build system menu
+        // Build main system menu
         buildMenu(schema, menuEl, gridTitleEl, addRowBtn);
 
         const navList = menuEl.querySelector('ul') || menuEl;
@@ -31,39 +32,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         let calName = 'Calendar';
         let calIconHtml = renderIconHtml('', 'assets/icons/calendar.png');
 
+        // Fetch Dashboard config safely through API to avoid 403 Forbidden
         try {
-            const dashRes = await fetch('includes/dashboard.json');
+            const dashRes = await fetch('api.php?api=dashboard&v=' + Date.now());
             if (dashRes.ok) {
                 const dashCfg = await dashRes.json();
                 if (dashCfg.menu_name) dashName = dashCfg.menu_name;
                 dashIconHtml = renderIconHtml(dashCfg.menu_icon, 'assets/icons/dashboard.png');
             }
-        } catch(e) { console.warn('Could not load dashboard.json for menu'); }
+        } catch(e) { 
+            console.warn('Could not load dashboard config for menu', e); 
+        }
 
+        // Fetch Calendar config safely through API to avoid 403 Forbidden
         try {
-            const calRes = await fetch('includes/calendar.json');
+            const calRes = await fetch('api.php?api=calendar&v=' + Date.now());
             if (calRes.ok) {
                 const calCfg = await calRes.json();
                 if (calCfg.menu_name) calName = calCfg.menu_name;
                 calIconHtml = renderIconHtml(calCfg.menu_icon, 'assets/icons/calendar.png');
             }
-        } catch(e) { console.warn('Could not load calendar.json for menu'); }
+        } catch(e) { 
+            console.warn('Could not load calendar config for menu', e); 
+        }
 
-        // Setup Dashboard link
+        // Setup Dashboard link element
         const dashItem = document.createElement('li');
         const dashLink = document.createElement('a');
         dashLink.href = 'dashboard.php';
         dashLink.className = 'custom-nav-link';
         dashLink.innerHTML = `${dashIconHtml} <span style="vertical-align:middle;">${dashName}</span>`;
 
-        // Setup Calendar link
+        // Setup Calendar link element
         const calItem = document.createElement('li');
         const calLink = document.createElement('a');
         calLink.href = 'calendar.php';
         calLink.className = 'custom-nav-link';
         calLink.innerHTML = `${calIconHtml} <span style="vertical-align:middle;">${calName}</span>`;
 
-        // Inject links
+        // Inject created links into DOM
         if (navList.tagName === 'UL') {
             dashItem.appendChild(dashLink);
             calItem.appendChild(calLink);
@@ -79,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Populate column filter dropdown
+// Populate column filter dropdown dynamically
 function populateColumnFilter() {
     const { displayedColumns, currentTable } = getState();
     columnFilterEl.innerHTML = `<option value="">All columns</option>`;
@@ -137,7 +144,7 @@ function renderBooleanFilters() {
     }
 }
 
-// Event triggered when a new table is fully loaded
+// Triggered when a new table is fully loaded
 document.addEventListener("tableLoaded", () => {
     populateColumnFilter();
     renderBooleanFilters();
@@ -159,14 +166,14 @@ async function applySearch() {
     });
 
     let rows = fullData.filter(row => {
-        // 1. Validate Boolean Filters First
+        // Validate Boolean Filters First
         for (const filter of activeBoolFilters) {
             const rowVal = row[filter.col];
             const rowBool = (rowVal === true || rowVal === 't' || rowVal === 'true' || rowVal === 1);
-            if (rowBool !== filter.val) return false; // Exclude row if boolean doesn't match
+            if (rowBool !== filter.val) return false;
         }
 
-        // 2. Validate Text Search Second
+        // Validate Text Search Second
         if (q) {
             if (selectedColumn) {
                 const raw = (row[selectedColumn] ?? '').toString().toLowerCase();
@@ -178,11 +185,11 @@ async function applySearch() {
                     const display = (row[col + '__display'] ?? '').toString().toLowerCase();
                     return raw.includes(q) || display.includes(q);
                 });
-                if (!matchesText) return false; // Exclude if text not found
+                if (!matchesText) return false;
             }
         }
 
-        return true; // Keep row if it passed all active filters
+        return true;
     });
 
     setFilteredData(rows);

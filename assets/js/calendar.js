@@ -4,7 +4,7 @@ let currentYear = new Date().getFullYear();
 let eventsData = [];
 let appSchema = null;
 
-// Init calendar
+// Initialize calendar
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchSchema();
     await fetchEvents();
@@ -29,9 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// Fetch schema.json directly
+// Fetch schema securely from API
 async function fetchSchema() {
-
     if (typeof window.schema !== 'undefined') {
         appSchema = window.schema;
         return;
@@ -42,19 +41,27 @@ async function fetchSchema() {
     }
     
     try {
-        const res = await fetch('includes/schema.json');
+        // Secure fetch with Cache Buster
+        const res = await fetch('api.php?api=schema&v=' + Date.now());
         if (res.ok) {
             appSchema = await res.json();
         }
     } catch (err) {
-        console.warn('Nie udało się pobrać schematu w kalendarzu', err);
+        console.warn('Could not fetch schema for calendar', err);
     }
 }
 
-// Fetch events from backend
+// Fetch events from backend API securely
 async function fetchEvents() {
     try {
-        const res = await fetch('api.php?api=calendar');
+        // Correct endpoint with Cache Buster
+        const res = await fetch('api.php?api=calendar&v=' + Date.now());
+        
+        if (!res.ok) {
+            console.error('HTTP Error fetching calendar events', res.status);
+            return;
+        }
+        
         const data = await res.json();
         eventsData = data.events || [];
     } catch (err) {
@@ -76,7 +83,6 @@ function renderCalendar() {
         tooltip.style.cssText = 'position: absolute; display: none; background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-size: 13px; z-index: 10000; pointer-events: none; min-width: 220px; color: #333;';
         document.body.appendChild(tooltip);
     }
-    // -----------------------------------------------------------
     
     const monthNames = [
         "January", "February", "March", "April", "May", "June", 

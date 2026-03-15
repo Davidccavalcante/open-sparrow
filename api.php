@@ -27,6 +27,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 header('Content-Type: application/json; charset=utf-8');
 
 try {
+    // GET: SCHEMA DATA (Added to prevent 403 Forbidden for frontend)
+    if ($method === 'GET' && ($_GET['api'] ?? '') === 'schema') {
+        echo $schemaJson;
+        exit;
+    }
+
     // GET: DASHBOARD DATA
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'dashboard') {
         $dashPath = __DIR__ . '/includes/dashboard.json';
@@ -39,7 +45,10 @@ try {
         $dashJson = file_get_contents($dashPath);
         $dashboard = json_decode($dashJson, true, 512, JSON_THROW_ON_ERROR);
 
+        // Include menu config so frontend can build the sidebar
         $response = [
+            'menu_name' => $dashboard['menu_name'] ?? 'Dashboard',
+            'menu_icon' => $dashboard['menu_icon'] ?? '',
             'layout' => $dashboard['layout'] ?? [],
             'widgets' => []
         ];
@@ -162,7 +171,7 @@ try {
             $color = $src['color'] ?? '#3b82f6';
 
             if (isset($tableCfg['columns'][$dateCol])) {
-                // Pobieramy wszystkie kolumny, tak jak w przypadku grida
+                // Fetch all columns just like in the grid
                 $cols = column_list($tableCfg);
                 $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
                 $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
@@ -180,25 +189,30 @@ try {
                     }
                     pg_free_result($res);
 
-                    // Rozwiązujemy klucze obce (FK -> Display Name)
+                    // Resolve foreign keys (FK -> Display Name)
                     $rows = map_fk_display($schema, $tableCfg, $rows);
 
                     foreach ($rows as $r) {
                         $events[] = [
                             'id' => $r[$idCol],
                             'table' => $table,
-                            'title' => $r[$titleCol] ?? 'Brak tytułu',
+                            'title' => $r[$titleCol] ?? 'No title',
                             'date' => substr($r[$dateCol], 0, 10),
                             'color' => $color,
                             'icon' => $src['icon'] ?? null,
-                            'rowData' => $r // Przekazujemy CAŁY wiersz do JavaScriptu
+                            'rowData' => $r // Pass the ENTIRE row to JavaScript
                         ];
                     }
                 }
             }
         }
 
-        echo json_encode(['events' => $events]);
+        // Include menu config so frontend can build the sidebar
+        echo json_encode([
+            'menu_name' => $calendar['menu_name'] ?? 'Calendar',
+            'menu_icon' => $calendar['menu_icon'] ?? '',
+            'events' => $events
+        ]);
         exit;
     }
 
@@ -213,7 +227,7 @@ try {
         $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
         $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
         
-        // --- ZMIANA: Obsługa dynamicznego filtrowania (dla drill-down) ---
+        // Dynamic filtering support (for drill-down)
         $filterCol = $_GET['filter_col'] ?? '';
         $filterVal = $_GET['filter_val'] ?? '';
         $whereSql = '';
@@ -234,7 +248,6 @@ try {
         } else {
             $res = pg_query_params($conn, $sql, $params);
         }
-        // ------------------------------------------------------------------
 
         if (!$res) {
             http_response_code(500);
