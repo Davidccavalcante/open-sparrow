@@ -58,9 +58,17 @@ export function renderDocumentation(ctx) {
             <h3 style="color: #2563eb; margin-top: 30px;">5. System Health & Backups</h3>
             <p>Ensure your system is running smoothly and data is safe.</p>
             <ul style="padding-left: 20px;">
-                <li><strong>Database & Security:</strong> Manage your PostgreSQL connection and change the default admin password.</li>
-                <li><strong>System Health:</strong> Performs live checks on your PHP version, DB modules, directory write permissions, and database connectivity.</li>
-                <li><strong>Export / Import Config:</strong> Use the top navigation buttons to download or upload a ZIP backup of your current JSON configuration. Perfect for migrations and version control.</li>
+                <li><strong>Initialize System Tables:</strong> Found in the Health tab, this critical feature builds the base <code>app.users</code>, <code>app.users_log</code>, and <code>app.users_notifications</code> tables. It must be executed on a fresh installation.</li>
+                <li><strong>Database & Security:</strong> Manage your PostgreSQL connection credentials and change the master admin password used to access this configuration panel.</li>
+                <li><strong>System Diagnostics:</strong> Performs live checks on your PHP version, ZIP extensions, directory write permissions, and database connectivity.</li>
+                <li><strong>Export / Import Config:</strong> Use the top navigation buttons to download (Export) or upload (Import) a ZIP archive containing all your JSON settings. This is highly recommended for creating backups or migrating your setup to a production server.</li>
+            </ul>
+
+            <h3 style="color: #2563eb; margin-top: 30px;">6. Users Management</h3>
+            <p>The <strong>Users</strong> tab is dedicated to managing access to the frontend CRM interface.</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Create Users:</strong> Add new frontend user accounts by providing a username and a secure password (which is heavily hashed in the database).</li>
+                <li><strong>Active Status Toggle:</strong> You can instantly revoke or restore a user's login access by toggling their "Active / Inactive" status, without permanently deleting their historical records from the database.</li>
             </ul>
         </div>
     `;
