@@ -1,6 +1,11 @@
 <?php
 session_start();
 
+// Generate CSRF token for secure form submission and API requests
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // Default password hash for fresh installation
 $admin_password_hash = password_hash('admin', PASSWORD_DEFAULT); 
 
@@ -10,8 +15,9 @@ if (file_exists($securityFile)) {
     if (isset($secData['admin_password']) && $secData['admin_password'] !== '') {
         $storedPass = $secData['admin_password'];
         
-        // Hash the stored password if it is still in plaintext for backwards compatibility
-        if (password_get_info($storedPass)['algo'] === 0) {
+        // Safely check if password is in plaintext
+        $info = password_get_info($storedPass);
+        if ($info['algoName'] === 'unknown') {
             $admin_password_hash = password_hash($storedPass, PASSWORD_DEFAULT);
         } else {
             $admin_password_hash = $storedPass;
@@ -26,9 +32,13 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
-// Handle login attempt using secure hash verification
+// Handle login attempt using secure hash verification and CSRF protection
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_password'])) {
-    if (password_verify($_POST['admin_password'], $admin_password_hash)) {
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+        $login_error = "Invalid request (CSRF check failed).";
+    } elseif (password_verify($_POST['admin_password'], $admin_password_hash)) {
+        session_regenerate_id(true); // Prevent session fixation vulnerabilities
         $_SESSION['sparrow_admin_logged_in'] = true;
         header("Location: index.php");
         exit;
@@ -61,8 +71,9 @@ if (!isset($_SESSION['sparrow_admin_logged_in']) || $_SESSION['sparrow_admin_log
         <div class="login-card">
             <h2>Sparrow Admin</h2>
             <p style="font-size:13px; color:#666; margin-bottom:15px;">Default password: <strong>admin</strong></p>
-            <?php if (isset($login_error)) echo "<div class='error'>{$login_error}</div>"; ?>
+            <?php if (isset($login_error)) echo "<div class='error'>" . htmlspecialchars($login_error, ENT_QUOTES) . "</div>"; ?>
             <form method="POST" action="index.php">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
                 <input type="password" name="admin_password" placeholder="Enter password" required autofocus>
                 <button type="submit">Login</button>
             </form>
@@ -78,8 +89,9 @@ if (!isset($_SESSION['sparrow_admin_logged_in']) || $_SESSION['sparrow_admin_log
 <head>
     <meta charset="UTF-8">
     <title>Sparrow Admin | Dashboard</title>
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
     <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="style.css?v=<?php echo filemtime('style.css'); ?>">
+    <link rel="stylesheet" href="style.css?v=<?php echo @filemtime('style.css'); ?>">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
@@ -129,6 +141,6 @@ if (!isset($_SESSION['sparrow_admin_logged_in']) || $_SESSION['sparrow_admin_log
         </section>
     </main>
 
-    <script type="module" src="app.js?v=<?php echo filemtime('app.js'); ?>"></script>
+    <script type="module" src="app.js?v=<?php echo @filemtime('app.js'); ?>"></script>
 </body>
 </html>

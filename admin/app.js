@@ -7,7 +7,7 @@ import { renderDatabaseEditor } from './database.js';
 import { renderSecurityEditor } from './security.js'; 
 import { renderHealthDashboard } from './health.js';  
 import { renderDocumentation } from './docs.js';
-import { renderUsersEditor } from './users.js'; // ZMIANA: Import nowego modułu użytkowników
+import { renderUsersEditor } from './users.js';
 
 let currentConfig = null;
 let currentFile = 'schema'; 
@@ -18,6 +18,18 @@ const itemListEl = document.getElementById('itemList');
 const workspaceEl = document.getElementById('editorForm');
 const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
+
+// Utility function to escape HTML strings safely against XSS
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+// Retrieve the CSRF token from the meta tag
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     initDashboardUI();
@@ -62,7 +74,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         formData.append('backup_file', file);
 
         try {
-            const res = await fetch('api.php?action=import', { method: 'POST', body: formData });
+            const res = await fetch('api.php?action=import', { 
+                method: 'POST', 
+                headers: { 'X-CSRF-Token': getCsrfToken() },
+                body: formData 
+            });
             const data = await res.json();
             if (data.status === 'success') {
                 alert('Configuration imported successfully! Refreshing page...');
@@ -77,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function fetchGlobalSchema() {
     try {
-        const res = await fetch(`api.php?action=get&file=schema`);
+        const res = await fetch('api.php?action=get&file=schema');
         globalSchemaObj = await res.json();
     } catch (e) { console.warn("Could not load global schema"); }
 }
@@ -100,8 +116,6 @@ function getColumnOptionsForTable(tableName) {
 }
 
 async function loadConfigFile(fileName) {
-
-    // ZMIANA: Dodano obsługę pliku 'users'
     if (fileName === 'health' || fileName === 'docs' || fileName === 'users') {
         currentConfig = null;
         renderSidebar();
@@ -168,7 +182,6 @@ function clearConfig() {
 function renderSidebar() {
     itemListEl.innerHTML = '';
     
-    // ZMIANA: Zmiana nagłówka i wyświetlania dla zakładki users
     if (currentFile === 'database' || currentFile === 'security' || currentFile === 'health' || currentFile === 'docs' || currentFile === 'users') {
         document.getElementById('sidebarTitle').textContent = currentFile.charAt(0).toUpperCase() + currentFile.slice(1);
         const actionDiv = document.getElementById('sidebarActions');
@@ -178,7 +191,7 @@ function renderSidebar() {
         let title = "⚙️ Settings";
         if (currentFile === 'health') title = "⚙️ View Diagnostics";
         if (currentFile === 'docs') title = "📖 Read Documentation";
-        if (currentFile === 'users') title = "👥 System Users"; // ZMIANA
+        if (currentFile === 'users') title = "👥 System Users";
         
         li.textContent = title; 
         li.style.fontWeight = 'bold'; 
@@ -284,8 +297,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar };
     
-    // ZMIANA: Ukrywanie przycisku "Save File" dla widoków API, aby nie mylić użytkownika
-    if (['health', 'docs', 'users'].includes(key.toLowerCase())) {
+    if (['health', 'docs', 'users'].includes(String(key).toLowerCase())) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -295,7 +307,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'security') return renderSecurityEditor(key, itemData, isArray, ctx);
     if (currentFile === 'health') return renderHealthDashboard(ctx);
     if (currentFile === 'docs') return renderDocumentation(ctx);
-    if (currentFile === 'users') return renderUsersEditor(ctx); // ZMIANA: Inicjalizacja komponentu users
+    if (currentFile === 'users') return renderUsersEditor(ctx);
 
     if (key === 'LAYOUT' && currentFile === 'dashboard') return renderDashboardLayout(ctx);
     if (key === 'LAYOUT' && currentFile === 'calendar') {
@@ -311,7 +323,8 @@ function renderEditor(key, itemData, isArray) {
 
     const headerDiv = document.createElement('div');
     headerDiv.style.display = 'flex'; headerDiv.style.justifyContent = 'space-between'; headerDiv.style.alignItems = 'center';
-    const title = document.createElement('h3'); title.textContent = `Edit: ${isArray ? 'Item ' + key : key}`;
+    const title = document.createElement('h3'); 
+    title.textContent = `Edit: ${isArray ? 'Item ' + key : key}`;
     headerDiv.appendChild(title);
     
     const btnDelete = document.createElement('button');
@@ -336,7 +349,12 @@ btnSave.addEventListener('click', async () => {
     if (!currentConfig) return;
     try {
         const response = await fetch(`api.php?action=save&file=${currentFile}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(currentConfig)
+            method: 'POST', 
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken()
+            }, 
+            body: JSON.stringify(currentConfig)
         });
         const result = await response.json();
         if (result.status === 'success') { alert(`${currentFile}.json saved!`); fetchGlobalSchema(); } 

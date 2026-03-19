@@ -1,6 +1,12 @@
 // admin/schema.js
 import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey } from './ui.js';
 
+// Utility function to escape HTML strings safely against XSS
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
 // Sync tables from database
 export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onError) {
     try {
@@ -30,7 +36,9 @@ export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onE
 // Render the schema editor UI
 export function renderSchemaEditor(tableName, tableData, ctx) {
     const { workspaceEl, getTableOptions, renderEditor } = ctx;
-    workspaceEl.innerHTML = `<h3>Table Properties: ${tableName}</h3>`;
+    
+    // SECURE: Escape table name to prevent XSS
+    workspaceEl.innerHTML = `<h3>Table Properties: ${escapeHtml(tableName)}</h3>`;
 
     if (!tableData.columns || Array.isArray(tableData.columns)) tableData.columns = {};
     if (!tableData.foreign_keys || Array.isArray(tableData.foreign_keys)) tableData.foreign_keys = {};
@@ -68,7 +76,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 data.columns.forEach(col => {
                     if (!tableData.columns[col.column_name]) {
                         
-                        // FIX: Check safely if enum_values is a real array
+                        // Check safely if enum_values is a real array
                         const isEnum = Array.isArray(col.enum_values);
                         const isNotNull = col.is_nullable === 'NO'; 
                         

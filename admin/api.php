@@ -14,7 +14,27 @@ $action = $_GET['action'] ?? '';
 $file = $_GET['file'] ?? '';
 
 // Set this to false for GitHub public release
-$isDemoMode = false; 
+$isDemoMode = false;
+
+// CSRF Protection for state-changing POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
+    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
+        header('Content-Type: application/json');
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'error' => 'CSRF token mismatch.']);
+        exit;
+    }
+}
+
+// Ensure state-changing actions use POST method to prevent CSRF via GET
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle'];
+if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Content-Type: application/json');
+    http_response_code(405);
+    echo json_encode(['status' => 'error', 'error' => 'Method Not Allowed. Use POST.']);
+    exit;
+}
 
 // Initialize database tables and migrations
 if ($action === 'init_db') {
@@ -24,53 +44,16 @@ if ($action === 'init_db') {
 
         $queries = [
             "CREATE SCHEMA IF NOT EXISTS app",
-
-            "CREATE TABLE IF NOT EXISTS app.users (
-                id serial4 NOT NULL,
-                username varchar(50) NOT NULL,
-                password_hash varchar(255) NOT NULL,
-                is_active bool DEFAULT true,
-                CONSTRAINT users_pkey PRIMARY KEY (id),
-                CONSTRAINT users_username_key UNIQUE (username)
-            )",
-            
+            "CREATE TABLE IF NOT EXISTS app.users ( id serial4 NOT NULL, username varchar(50) NOT NULL, password_hash varchar(255) NOT NULL, is_active bool DEFAULT true, CONSTRAINT users_pkey PRIMARY KEY (id), CONSTRAINT users_username_key UNIQUE (username) )",
             "ALTER TABLE app.users ADD COLUMN IF NOT EXISTS is_active bool DEFAULT true",
-
-            "CREATE TABLE IF NOT EXISTS app.users_log (
-                id serial4 NOT NULL,
-                user_id int4 NOT NULL,
-                \"action\" varchar(50) NOT NULL,
-                target_table varchar(100),
-                record_id int4,
-                created_at timestamp DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT users_log_pkey PRIMARY KEY (id)
-            )",
-
-            "CREATE TABLE IF NOT EXISTS app.users_notifications (
-                id serial4 NOT NULL,
-                user_id int8 NOT NULL,
-                title varchar(255) NOT NULL,
-                link varchar(255),
-                source_table varchar(100),
-                source_id int8,
-                is_read bool DEFAULT false,
-                notify_date date NOT NULL,
-                created_at timestamp DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT users_notifications_pkey PRIMARY KEY (id),
-                CONSTRAINT users_notifications_user_id_source_table_source_id_notify_d_key 
-                    UNIQUE (user_id, source_table, source_id, notify_date)
-            )",
-
-            "INSERT INTO app.users (username, password_hash, is_active)
-             SELECT 'test', '\$2a\$12\$oqxkKJu53qLCJSnmyxs1BeIDeP81M.cstuhm7T6hS0HPMXYqaK2Je', true
-             WHERE NOT EXISTS (SELECT 1 FROM app.users WHERE username = 'test')"
+            "CREATE TABLE IF NOT EXISTS app.users_log ( id serial4 NOT NULL, user_id int4 NOT NULL, \"action\" varchar(50) NOT NULL, target_table varchar(100), record_id int4, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT users_log_pkey PRIMARY KEY (id) )",
+            "CREATE TABLE IF NOT EXISTS app.users_notifications ( id serial4 NOT NULL, user_id int8 NOT NULL, title varchar(255) NOT NULL, link varchar(255), source_table varchar(100), source_id int8, is_read bool DEFAULT false, notify_date date NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT users_notifications_pkey PRIMARY KEY (id), CONSTRAINT users_notifications_user_id_source_table_source_id_notify_d_key UNIQUE (user_id, source_table, source_id, notify_date) )",
+            "INSERT INTO app.users (username, password_hash, is_active) SELECT 'test', '\$2y\$12\$oqxkKJu53qLCJSnmyxs1BeIDeP81M.cstuhm7T6hS0HPMXYqaK2Je', true WHERE NOT EXISTS (SELECT 1 FROM app.users WHERE username = 'test')"
         ];
 
         foreach ($queries as $q) {
-            $res = pg_query($conn, $q);
-            if (!$res) {
-                throw new Exception(pg_last_error($conn));
-            }
+            $res = @pg_query($conn, $q);
+            if (!$res) throw new Exception(pg_last_error($conn));
         }
 
         header('Content-Type: application/json');
@@ -90,10 +73,14 @@ if ($action === 'users_list') {
         $conn = db_connect();
         
         $sql = "SELECT id, username, is_active FROM app.users ORDER BY id ASC";
-        $res = pg_query($conn, $sql);
+        $res = @pg_query($conn, $sql);
         
         if (!$res) {
-            throw new Exception(pg_last_error($conn));
+            $err = pg_last_error($conn);
+            if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
+                throw new Exception("Database schema is outdated or missing. Please initialize tables.");
+            }
+            throw new Exception($err);
         }
 
         $users = [];
@@ -132,12 +119,9 @@ if ($action === 'users_add') {
         
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $sql = "INSERT INTO app.users (username, password_hash, is_active) VALUES ($1, $2, true)";
-        $res = pg_query_params($conn, $sql, [$username, $hash]);
+        $res = @pg_query_params($conn, $sql, [$username, $hash]);
         
-        if (!$res) {
-            throw new Exception(pg_last_error($conn));
-        }
-
+        if (!$res) throw new Exception(pg_last_error($conn));
         echo json_encode(['status' => 'success']);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -167,12 +151,9 @@ if ($action === 'users_toggle') {
         $conn = db_connect();
         
         $sql = "UPDATE app.users SET is_active = $1 WHERE id = $2";
-        $res = pg_query_params($conn, $sql, [$isActive ? 'true' : 'false', $userId]);
+        $res = @pg_query_params($conn, $sql, [$isActive ? 'true' : 'false', $userId]);
         
-        if (!$res) {
-            throw new Exception(pg_last_error($conn));
-        }
-
+        if (!$res) throw new Exception(pg_last_error($conn));
         echo json_encode(['status' => 'success']);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -227,9 +208,7 @@ if ($action === 'export') {
         $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'database.json', 'security.json'];
 
         foreach ($filesToBackup as $f) {
-            if (file_exists($includesDir . $f)) {
-                $zip->addFile($includesDir . $f, $f);
-            }
+            if (file_exists($includesDir . $f)) $zip->addFile($includesDir . $f, $f);
         }
         $zip->close();
 
@@ -338,16 +317,13 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
             $dbData['password'] = '********';
             $dbData['dbname'] = 'demo_db';
             echo json_encode($dbData);
-        } 
-        // Mask admin password in Demo Mode
-        elseif ($isDemoMode && $file === 'security') {
+        } elseif ($isDemoMode && $file === 'security') {
             $secData = json_decode($fileContent, true);
             if (isset($secData['admin_password'])) {
                 $secData['admin_password'] = '********';
             }
             echo json_encode($secData);
-        }
-        else {
+        } else {
             echo $fileContent;
         }
     } else {
@@ -373,10 +349,10 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
     $parsedData = json_decode($data, true);
     
     if ($parsedData !== null) {
-        
         // Hash the admin password securely before saving if it is not hashed already
         if ($file === 'security' && !empty($parsedData['admin_password'])) {
-            if (password_get_info($parsedData['admin_password'])['algo'] === 0) {
+            $info = password_get_info($parsedData['admin_password']);
+            if ($info['algoName'] === 'unknown') {
                 $parsedData['admin_password'] = password_hash($parsedData['admin_password'], PASSWORD_DEFAULT);
             }
         }
@@ -400,18 +376,10 @@ if ($action === 'sync_schema') {
         $conn = db_connect();
         $schemaName = $_GET['schema_name'] ?? 'public';
 
-        $sql = "
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = $1 
-              AND table_type = 'BASE TABLE'
-        ";
+        $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE'";
+        $res = @pg_query_params($conn, $sql, [$schemaName]);
 
-        $res = pg_query_params($conn, $sql, [$schemaName]);
-
-        if (!$res) {
-            throw new Exception(pg_last_error($conn));
-        }
+        if (!$res) throw new Exception(pg_last_error($conn));
 
         $tables = [];
         while ($row = pg_fetch_assoc($res)) {
@@ -434,16 +402,10 @@ if ($action === 'get_db_columns') {
         $tableName = $_GET['table'] ?? '';
         $schemaName = $_GET['schema_name'] ?? 'public';
 
-        $sql = "
-            SELECT column_name, data_type, is_nullable, udt_name
-            FROM information_schema.columns 
-            WHERE table_schema = $1 AND table_name = $2
-        ";
-        $res = pg_query_params($conn, $sql, [$schemaName, $tableName]);
+        $sql = "SELECT column_name, data_type, is_nullable, udt_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
+        $res = @pg_query_params($conn, $sql, [$schemaName, $tableName]);
 
-        if (!$res) {
-            throw new Exception(pg_last_error($conn));
-        }
+        if (!$res) throw new Exception(pg_last_error($conn));
 
         $columns = [];
         while ($row = pg_fetch_assoc($res)) {
