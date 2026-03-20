@@ -1,6 +1,6 @@
 # Contributing to OpenSparrow
 
-First of all, thank you for considering contributing to OpenSparrow! 🎉  
+First of all, thank you for considering contributing to OpenSparrow!
 We welcome contributions of all kinds — bug reports, feature suggestions, documentation improvements, and code.
 
 ---
