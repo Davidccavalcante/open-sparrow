@@ -90,7 +90,6 @@ open-sparrow/
 |- COPYING                   # License text copy
 |- LICENCE                   # Additional license file variant
 |- README.md                 # Main project documentation
-`- README1.md                # Development README draft
 ```
 
 ---
