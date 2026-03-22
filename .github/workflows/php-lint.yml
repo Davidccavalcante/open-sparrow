@@ -5,8 +5,10 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  permissions:
-    contents: read
+
+# Przesunięte do lewej krawędzi (top-level)
+permissions:
+  contents: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -26,5 +28,4 @@ jobs:
         tools: phpcs
 
     - name: Run PHP CodeSniffer
-
       run: phpcs --standard=phpcs.xml --runtime-set ignore_warnings_on_exit 1

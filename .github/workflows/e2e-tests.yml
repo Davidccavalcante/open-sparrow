@@ -7,8 +7,10 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '0 0 * * *' # Nightly run at midnight
-  permissions:
-    contents: read
+
+# Przesunięte do lewej krawędzi (top-level)
+permissions:
+  contents: read
 
 jobs:
   e2e-chrome-test:
