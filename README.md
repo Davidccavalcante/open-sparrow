@@ -55,48 +55,28 @@ Admin panel.
 
 ## Project Structure
 
-```text
-open-sparrow/
-|- admin/
-|  |- api.php                # Admin-side API endpoints
-|  |- app.js                 # Admin app bootstrap and shared logic
-|  |- calendar.js            # Calendar configuration UI logic
-|  |- dashboard.js           # Dashboard builder/configuration logic
-|  |- database.js            # Database settings and connection UI logic
-|  |- docs.js                # Documentation/help tab logic in admin
-|  |- health.js              # System health checks and diagnostics UI
-|  |- index.php              # Admin panel entry point
-|  |- schema.js              # Schema editor logic (tables/fields/relations)
-|  |- security.js            # Security settings UI (auth/debug controls)
-|  |- style.css              # Admin-specific styles
-|  |- ui.js                  # Shared admin UI components/helpers
-|  `- users.js               # User management tab logic
-|- assets/
-|  |- css/                   # Frontend style files
-|  |- icons/                 # Icon assets used by the UI
-|  |- img/                   # Image assets (logos, screenshots)
-|  `- js/                    # Frontend JavaScript modules
-|- cron/
-|  `- cron_notifications.php # Scheduled event notification runner
-|- includes/
-|  |- api_helpers.php        # Shared API validation/response helpers
-|  `- db.php                 # PostgreSQL connection and DB utilities
-|- templates/
-|  `- template.php           # Base page template/layout wrapper
-|- api.php                   # Main application API endpoint (CRUD)
-|- api_notifications.php     # Notification API endpoint
-|- calendar.php              # Calendar page entry point
-|- create.php                # Record creation form/page
-|- dashboard.php             # Dashboard page entry point
-|- edit.php                  # Record editing page
-|- index.php                 # Main app landing page/data grid
-|- login.php                 # Authentication/login page
-|- logout.php                # Session logout handler
-|- CONTRIBUTING.md           # Contribution guidelines
-|- COPYING                   # License text copy
-|- LICENCE                   # Additional license file variant
-|- README.md                 # Main project documentation
-```
+Below is an overview of the most important directories and files in the OpenSparrow project:
+
+### Core Directories
+* **`admin/`** – The administrative heart of the application. It contains the logic for the Management Panel, including database schema editing (`schema.js`), user management (`users.js`), and system security settings (`security.js`).
+* **`assets/`** – Static resources for the frontend.
+    * `css/` & `js/`: Application styles and core JavaScript logic (e.g., data grid, export, pagination).
+    * `icons/` & `img/`: UI assets, logos, and visual elements.
+* **`includes/`** – Essential backend components.
+    * `db.php`: Central PostgreSQL connection and database utility functions.
+    * `api_helpers.php`: Shared helpers for request validation and API responses.
+* **`cron/`** – Background workers and scheduled tasks, such as `cron_notifications.php` for automated alerts.
+* **`templates/`** – UI layout wrappers. The `template.php` file defines the standard look and feel of every page.
+* **`tests/`** – Quality assurance suite, featuring end-to-end (E2E) Selenium tests.
+
+### Key Files
+* **`api.php`** – The main application API gateway handling all CRUD operations.
+* **`index.php`** – The default landing page and main data entry point for users.
+* **`dashboard.php` / `calendar.php`** – Primary user-facing modules for data visualization and scheduling.
+* **`login.php` / `logout.php`** – Secure session and authentication management.
+* **`create.php` / `edit.php`** – Dedicated forms for creating and updating records.
+* **`Dockerfile` / `docker-compose.yml`** – Containerization config for easy deployment and local development.
+* **`phpcs.xml`** – Configuration for PHP CodeSniffer to ensure PSR-12 coding standards.
 
 ---
 
