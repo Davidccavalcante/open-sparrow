@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   hadolint:
     runs-on: ubuntu-latest
@@ -19,7 +22,5 @@ jobs:
       - name: Run Hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          # Path Dockerfile
           dockerfile: Dockerfile
-          # Ignore warnings
-          ignore-warnings: true
+          failure-threshold: error
