@@ -8,7 +8,26 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Rate limiter configuration
+$maxAttempts = 5;
+$lockoutTime = 15 * 60;
+
+// Check if the user is currently locked out
+if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] >= $maxAttempts) {
+    $timeSinceLastFail = time() - $_SESSION['last_failed_login'];
+    
+    if ($timeSinceLastFail < $lockoutTime) {
+        $remainingMinutes = ceil(($lockoutTime - $timeSinceLastFail) / 60);
+        $error = "Too many failed attempts. Please try again in {$remainingMinutes} minute(s).";
+    } else {
+        // Lockout expired so we reset counters
+        $_SESSION['login_attempts'] = 0;
+        unset($_SESSION['last_failed_login']);
+    }
+}
+
+// Process login only if there is no rate limit error
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
     require __DIR__ . '/includes/db.php';
     require __DIR__ . '/includes/api_helpers.php';
     $conn = db_connect();
@@ -25,6 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = pg_fetch_assoc($res);
 
         if ($user && password_verify($password, $user['password_hash'])) {
+            // Successful login resets the attempts counter
+            $_SESSION['login_attempts'] = 0;
+            unset($_SESSION['last_failed_login']);
+            
+            // Regenerate session ID to prevent session fixation attacks
+            session_regenerate_id(true);
+            
             $_SESSION['user_id'] = $user['id'];
             
             // Log login action
@@ -33,7 +59,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: dashboard.php"); 
             exit;
         } else {
-            $error = 'Invalid credentials.';
+            // Failed login increments the counter
+            $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
+            $_SESSION['last_failed_login'] = time();
+            
+            $attemptsLeft = $maxAttempts - $_SESSION['login_attempts'];
+            
+            if ($attemptsLeft > 0) {
+                $error = "Invalid credentials. {$attemptsLeft} attempt(s) remaining.";
+            } else {
+                $error = "Too many failed attempts. Please try again in 15 minute(s).";
+            }
         }
     }
 }
@@ -115,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="login-box">
-	<center><img src="assets/img/logo-brown.png" alt="Logo" class="footer-logo" height="48" /></center>
+        <center><img src="assets/img/logo-brown.png" alt="Logo" class="footer-logo" height="48" /></center>
         <h2>OpenSparrow</h2>
         <?php if ($error): ?>
             <div class="error"><?php echo htmlspecialchars($error); ?></div>
