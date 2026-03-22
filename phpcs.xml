@@ -4,16 +4,14 @@
 
     <arg name="extensions" value="php"/>
 
-    <rule ref="PSR-12"/>
+    <rule ref="PSR12"/>
 
     <file>.</file>
 
     <exclude-pattern>*/assets/*</exclude-pattern>
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/tests/*</exclude-pattern>
-
     <exclude-pattern>*tmp_*</exclude-pattern>
 
     <arg value="p"/>
-    <arg value="colors"/>
 </ruleset>

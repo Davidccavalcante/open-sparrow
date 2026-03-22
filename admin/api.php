@@ -1,8 +1,8 @@
 <?php
+
 declare(strict_types=1);
 
 session_start();
-
 // Check if user is logged in
 if (!isset($_SESSION['sparrow_admin_logged_in']) || $_SESSION['sparrow_admin_logged_in'] !== true) {
     header('Content-Type: application/json');
@@ -12,10 +12,8 @@ if (!isset($_SESSION['sparrow_admin_logged_in']) || $_SESSION['sparrow_admin_log
 
 $action = $_GET['action'] ?? '';
 $file = $_GET['file'] ?? '';
-
 // Set this to false for GitHub public release
 $isDemoMode = false;
-
 // CSRF Protection for state-changing POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
@@ -41,7 +39,6 @@ if ($action === 'init_db') {
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
-
         $queries = [
             "CREATE SCHEMA IF NOT EXISTS app",
             "CREATE TABLE IF NOT EXISTS app.users ( id serial4 NOT NULL, username varchar(50) NOT NULL, password_hash varchar(255) NOT NULL, is_active bool DEFAULT true, CONSTRAINT users_pkey PRIMARY KEY (id), CONSTRAINT users_username_key UNIQUE (username) )",
@@ -50,10 +47,11 @@ if ($action === 'init_db') {
             "CREATE TABLE IF NOT EXISTS app.users_notifications ( id serial4 NOT NULL, user_id int8 NOT NULL, title varchar(255) NOT NULL, link varchar(255), source_table varchar(100), source_id int8, is_read bool DEFAULT false, notify_date date NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP,CONSTRAINT users_notifications_pkey PRIMARY KEY (id), CONSTRAINT users_notifications_user_id_source_table_source_id_notify_d_key UNIQUE (user_id, source_table, source_id, notify_date) )",
             "INSERT INTO app.users (username, password_hash, is_active) SELECT 'test', '\$2y\$12\$oqxkKJu53qLCJSnmyxs1BeIDeP81M.cstuhm7T6hS0HPMXYqaK2Je', true WHERE NOT EXISTS (SELECT 1 FROM app.users WHERE username = 'test')"
         ];
-
         foreach ($queries as $q) {
             $res = @pg_query($conn, $q);
-            if (!$res) throw new Exception(pg_last_error($conn));
+            if (!$res) {
+                throw new Exception(pg_last_error($conn));
+            }
         }
 
         header('Content-Type: application/json');
@@ -71,10 +69,8 @@ if ($action === 'users_list') {
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
-        
         $sql = "SELECT id, username, is_active FROM app.users ORDER BY id ASC";
         $res = @pg_query($conn, $sql);
-        
         if (!$res) {
             $err = pg_last_error($conn);
             if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
@@ -107,7 +103,6 @@ if ($action === 'users_add') {
     $data = json_decode(file_get_contents('php://input'), true);
     $username = trim($data['username'] ?? '');
     $password = $data['password'] ?? '';
-
     if (empty($username) || empty($password)) {
         echo json_encode(['status' => 'error', 'error' => 'Username and password are required.']);
         exit;
@@ -116,12 +111,12 @@ if ($action === 'users_add') {
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
-        
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $sql = "INSERT INTO app.users (username, password_hash, is_active) VALUES ($1, $2, true)";
         $res = @pg_query_params($conn, $sql, [$username, $hash]);
-        
-        if (!$res) throw new Exception(pg_last_error($conn));
+        if (!$res) {
+            throw new Exception(pg_last_error($conn));
+        }
         echo json_encode(['status' => 'success']);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -140,7 +135,6 @@ if ($action === 'users_toggle') {
     $data = json_decode(file_get_contents('php://input'), true);
     $userId = (int)($data['id'] ?? 0);
     $isActive = (bool)($data['is_active'] ?? false);
-
     if ($userId <= 0) {
         echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
         exit;
@@ -149,11 +143,11 @@ if ($action === 'users_toggle') {
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
-        
         $sql = "UPDATE app.users SET is_active = $1 WHERE id = $2";
         $res = @pg_query_params($conn, $sql, [$isActive ? 'true' : 'false', $userId]);
-        
-        if (!$res) throw new Exception(pg_last_error($conn));
+        if (!$res) {
+            throw new Exception(pg_last_error($conn));
+        }
         echo json_encode(['status' => 'success']);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -165,7 +159,6 @@ if ($action === 'users_toggle') {
 if ($action === 'health') {
     $db_connected = false;
     $db_error = 'Unknown error';
-
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
@@ -202,16 +195,15 @@ if ($action === 'export') {
 
     $zip = new ZipArchive();
     $zipFile = sys_get_temp_dir() . '/sparrow_config_' . time() . '.zip';
-
-    if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+    if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
         $includesDir = __DIR__ . '/../includes/';
         $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'database.json', 'security.json'];
-
         foreach ($filesToBackup as $f) {
-            if (file_exists($includesDir . $f)) $zip->addFile($includesDir . $f, $f);
+            if (file_exists($includesDir . $f)) {
+                $zip->addFile($includesDir . $f, $f);
+            }
         }
         $zip->close();
-
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="sparrow_backup.zip"');
         header('Content-Length: ' . filesize($zipFile));
@@ -236,15 +228,14 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
     }
 
     $zip = new ZipArchive();
-    if ($zip->open($_FILES['backup_file']['tmp_name']) === TRUE) {
+    if ($zip->open($_FILES['backup_file']['tmp_name']) === true) {
         $extractPath = __DIR__ . '/../includes/';
         $validFiles = [];
-        
+
         // Validate each file inside the archive
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
-            
-            // Block path traversal characters and enforce .json extension to prevent RCE
+// Block path traversal characters and enforce .json extension to prevent RCE
             if (str_contains($filename, '../') || str_contains($filename, '..\\') || substr($filename, -5) !== '.json') {
                 $zip->close();
                 http_response_code(400);
@@ -254,18 +245,18 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
             }
             $validFiles[] = $filename;
         }
-        
+
         // Extract only the validated files
         foreach ($validFiles as $file) {
             $zip->extractTo($extractPath, $file);
         }
-        
+
         $zip->close();
         header('Content-Type: application/json');
         echo json_encode(['status' => 'success']);
         exit;
     }
-    
+
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Invalid zip file']);
@@ -279,7 +270,6 @@ if ($action === 'list_icons') {
         'assets/icons' => __DIR__ . '/../assets/icons',
         'assets/img' => __DIR__ . '/../assets/img'
     ];
-
     foreach ($dirsToScan as $prefix => $dirPath) {
         if (is_dir($dirPath)) {
             $files = scandir($dirPath);
@@ -300,16 +290,13 @@ if ($action === 'list_icons') {
 
 // Allowed config files for read and write operations
 $allowedFiles = ['schema', 'dashboard', 'calendar', 'database', 'security'];
-
 // Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     $filePath = __DIR__ . '/../includes/' . $file . '.json';
     header('Content-Type: application/json');
-    
     if (file_exists($filePath)) {
         $fileContent = file_get_contents($filePath);
-        
-        // Mask sensitive data in Demo Mode
+    // Mask sensitive data in Demo Mode
         if ($isDemoMode && $file === 'database') {
             $dbData = json_decode($fileContent, true);
             $dbData['host'] = 'hidden-for-demo.postgres.database.azure.com';
@@ -334,8 +321,7 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
 
 // Save content to a JSON config file
 if ($action === 'save' && in_array($file, $allowedFiles, true)) {
-    
-    // Block saving sensitive files in Demo Mode
+// Block saving sensitive files in Demo Mode
     if ($isDemoMode && in_array($file, ['database', 'security'])) {
         http_response_code(403);
         echo json_encode(['status' => 'error', 'error' => 'Saving ' . $file . ' configuration is disabled in Demo Mode.']);
@@ -344,19 +330,17 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
 
     $data = file_get_contents('php://input');
     $filePath = __DIR__ . '/../includes/' . $file . '.json';
-
     header('Content-Type: application/json');
     $parsedData = json_decode($data, true);
-    
     if ($parsedData !== null) {
-        // Hash the admin password securely before saving if it is not hashed already
+    // Hash the admin password securely before saving if it is not hashed already
         if ($file === 'security' && !empty($parsedData['admin_password'])) {
             $info = password_get_info($parsedData['admin_password']);
             if ($info['algoName'] === 'unknown') {
                 $parsedData['admin_password'] = password_hash($parsedData['admin_password'], PASSWORD_DEFAULT);
             }
         }
-        
+
         if (!is_dir(__DIR__ . '/../includes/')) {
             mkdir(__DIR__ . '/../includes/', 0777, true);
         }
@@ -375,11 +359,11 @@ if ($action === 'sync_schema') {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
         $schemaName = $_GET['schema_name'] ?? 'public';
-
         $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE'";
         $res = @pg_query_params($conn, $sql, [$schemaName]);
-
-        if (!$res) throw new Exception(pg_last_error($conn));
+        if (!$res) {
+            throw new Exception(pg_last_error($conn));
+        }
 
         $tables = [];
         while ($row = pg_fetch_assoc($res)) {
@@ -401,25 +385,22 @@ if ($action === 'get_db_columns') {
         $conn = db_connect();
         $tableName = $_GET['table'] ?? '';
         $schemaName = $_GET['schema_name'] ?? 'public';
-
         $sql = "SELECT column_name, data_type, is_nullable, udt_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
         $res = @pg_query_params($conn, $sql, [$schemaName, $tableName]);
-
-        if (!$res) throw new Exception(pg_last_error($conn));
+        if (!$res) {
+            throw new Exception(pg_last_error($conn));
+        }
 
         $columns = [];
         while ($row = pg_fetch_assoc($res)) {
             $colName = $row['column_name'];
             $dataType = $row['data_type'];
             $udtName = $row['udt_name'];
-            
             $enumValues = null;
-
-            // Fetch ENUM values only for user-defined types safely using pg_escape_identifier
+        // Fetch ENUM values only for user-defined types safely using pg_escape_identifier
             if ($dataType === 'USER-DEFINED') {
                 $safeSchema = pg_escape_identifier($conn, $schemaName);
                 $safeUdt = pg_escape_identifier($conn, $udtName);
-                
                 $enumSql = "SELECT unnest(enum_range(NULL::$safeSchema.$safeUdt))::varchar AS enum_value";
                 $enumRes = @pg_query($conn, $enumSql);
                 if ($enumRes) {
@@ -437,7 +418,6 @@ if ($action === 'get_db_columns') {
                 'not_null' => ($row['is_nullable'] === 'NO'),
                 'display_name' => ucfirst(str_replace('_', ' ', $colName))
             ];
-
             if ($enumValues !== null) {
                 $colData['enum_values'] = $enumValues;
             }

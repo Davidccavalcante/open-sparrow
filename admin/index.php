@@ -7,14 +7,14 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // Default password hash for fresh installation
-$admin_password_hash = password_hash('admin', PASSWORD_DEFAULT); 
+$admin_password_hash = password_hash('admin', PASSWORD_DEFAULT);
 
 $securityFile = __DIR__ . '/../includes/security.json';
 if (file_exists($securityFile)) {
     $secData = json_decode(file_get_contents($securityFile), true);
     if (isset($secData['admin_password']) && $secData['admin_password'] !== '') {
         $storedPass = $secData['admin_password'];
-        
+
         // Safely check if password is in plaintext
         $info = password_get_info($storedPass);
         if ($info['algoName'] === 'unknown') {
@@ -71,7 +71,9 @@ if (!isset($_SESSION['sparrow_admin_logged_in']) || $_SESSION['sparrow_admin_log
         <div class="login-card">
             <h2>Sparrow Admin</h2>
             <p style="font-size:13px; color:#666; margin-bottom:15px;">Default password: <strong>admin</strong></p>
-            <?php if (isset($login_error)) echo "<div class='error'>" . htmlspecialchars($login_error, ENT_QUOTES) . "</div>"; ?>
+            <?php if (isset($login_error)) {
+                echo "<div class='error'>" . htmlspecialchars($login_error, ENT_QUOTES) . "</div>";
+            } ?>
             <form method="POST" action="index.php">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
                 <input type="password" name="admin_password" placeholder="Enter password" required autofocus>

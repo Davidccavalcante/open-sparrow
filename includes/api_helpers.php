@@ -1,36 +1,48 @@
 <?php
+
 // --- Helper functions for API ---
 
-function safe_table(array $schema, string $table): array {
+function safe_table(array $schema, string $table): array
+{
+
     if (!isset($schema['tables'][$table])) {
         throw new RuntimeException("Unknown table: {$table}");
     }
     return $schema['tables'][$table];
 }
 
-function column_list(array $tableCfg): array {
+function column_list(array $tableCfg): array
+{
+
     return array_keys($tableCfg['columns'] ?? []);
 }
 
-function id_column(): string { 
-    return 'id'; 
+function id_column(): string
+{
+
+    return 'id';
 }
 
-function pg_ident(string $name): string {
+function pg_ident(string $name): string
+{
+
     return '"' . str_replace('"', '""', $name) . '"';
 }
 
-function to_display_name(array $tableCfg): string {
+function to_display_name(array $tableCfg): string
+{
+
     return $tableCfg['display_name'] ?? ($tableCfg['name'] ?? 'Unknown');
 }
 
-function map_fk_display(array $schema, array $tableCfg, array $rows): array {
+function map_fk_display(array $schema, array $tableCfg, array $rows): array
+{
+
     if (empty($rows) || !isset($tableCfg['foreign_keys'])) {
         return $rows;
     }
 
     $conn = $GLOBALS['conn'];
-
     foreach ($tableCfg['foreign_keys'] as $fkCol => $fkCfg) {
         $fkValues = [];
         foreach ($rows as $row) {
@@ -39,7 +51,6 @@ function map_fk_display(array $schema, array $tableCfg, array $rows): array {
             }
         }
         $fkValues = array_unique($fkValues);
-
         if (empty($fkValues)) {
             continue;
         }
@@ -49,20 +60,9 @@ function map_fk_display(array $schema, array $tableCfg, array $rows): array {
         $refName   = $fkCfg['reference_table'];
         $refColId  = $fkCfg['reference_column'] ?? 'id';
         $refDisp   = $fkCfg['display_column'] ?? $refColId;
-
         $escapedVals = array_map(fn($v) => pg_escape_literal($conn, (string)$v), $fkValues);
         $inClause = implode(', ', $escapedVals);
-
-        $sql = sprintf(
-            'SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s IN (%s)',
-            pg_ident($refColId),
-            pg_ident($refDisp),
-            pg_ident($refSchema),
-            pg_ident($refName),
-            pg_ident($refColId),
-            $inClause
-        );
-
+        $sql = sprintf('SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s IN (%s)', pg_ident($refColId), pg_ident($refDisp), pg_ident($refSchema), pg_ident($refName), pg_ident($refColId), $inClause);
         $map = [];
         $res = pg_query($conn, $sql);
         if ($res) {
@@ -83,14 +83,17 @@ function map_fk_display(array $schema, array $tableCfg, array $rows): array {
     return $rows;
 }
 
-function normalize_boolean($val): string {
+function normalize_boolean($val): string
+{
+
     $truthy = ['true', '1', 1, true, 't', 'T', 'TRUE'];
     return in_array($val, $truthy, true) ? 'TRUE' : 'FALSE';
 }
 
-function type_min_value(string $type) {
+function type_min_value(string $type)
+{
+
     $t = strtolower($type);
-    
     if (str_contains($t, 'bool')) {
         return 'FALSE';
     }
@@ -100,12 +103,14 @@ function type_min_value(string $type) {
     if (str_contains($t, 'date') || str_contains($t, 'time')) {
         return '1970-01-01';
     }
-    
+
     return '';
 }
 
 // Log action to db
-function log_user_action($conn, int $userId, string $action, ?string $targetTable = null, ?int $recordId = null): void {
+function log_user_action($conn, int $userId, string $action, ?string $targetTable = null, ?int $recordId = null): void
+{
+
     $sql = 'INSERT INTO "app"."users_log" (user_id, action, target_table, record_id) VALUES ($1, $2, $3, $4)';
     @pg_query_params($conn, $sql, [$userId, $action, $targetTable, $recordId]);
 }

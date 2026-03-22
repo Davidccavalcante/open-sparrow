@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -81,8 +82,8 @@ if (!isset($_SESSION['user_id'])) {
 
 <header>
     <a href="index.php" class="brand-logo">
-		<img src="assets/img/logo-blue.png" alt="OpenSparrow Logo" />
-	</a>
+        <img src="assets/img/logo-blue.png" alt="OpenSparrow Logo" />
+  </a>
     <button onclick="window.location.href='index.php'" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.4); color: white; margin-right: auto; margin-left: 20px; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">
         &larr; Back to Grid
     </button>

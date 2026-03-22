@@ -112,7 +112,7 @@
     const schema = <?php echo isset($schemaJson) ? $schemaJson : '{}'; ?>;
 
     document.addEventListener("DOMContentLoaded", () => {
-		
+        
         const mobileActions = document.getElementById("mobileActions");
         const hamburger = document.getElementById("hamburger");
         const menu = document.getElementById("menu");

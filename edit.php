@@ -31,10 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
         // Skip primary key and readonly fields during UPDATE
-        if ($colName === $idCol || !empty($colCfg['readonly'])) continue;
-        
+        if ($colName === $idCol || !empty($colCfg['readonly'])) {
+            continue;
+        }
+
         $type = strtolower($colCfg['type'] ?? '');
-        
+
         if (str_contains($type, 'bool')) {
             $val = isset($_POST[$colName]) ? 'true' : 'false';
             $updates[] = pg_ident($colName) . " = $" . $i . "::boolean";
@@ -42,25 +44,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $i++;
         } else {
             $val = $_POST[$colName] ?? '';
-            if ($val === '') $val = null;
-            
+            if ($val === '') {
+                $val = null;
+            }
+
             $updates[] = pg_ident($colName) . " = $" . $i;
             $params[] = $val;
             $i++;
         }
     }
-    
+
     $params[] = $id;
     $sql = sprintf(
         'UPDATE "%s"."%s" SET %s WHERE %s = $%d',
-        $schemaName, $table, implode(', ', $updates), pg_ident($idCol), $i
+        $schemaName,
+        $table,
+        implode(', ', $updates),
+        pg_ident($idCol),
+        $i
     );
-    
+
     $res = pg_query_params($conn, $sql, $params);
     if ($res) {
         // Log manual edit
         log_user_action($conn, $_SESSION['user_id'], 'UPDATE', $table, (int)$id);
-        
+
         header("Location: index.php");
         exit;
     } else {
@@ -73,7 +81,9 @@ $sql = sprintf('SELECT * FROM "%s"."%s" WHERE %s = $1', $schemaName, $table, pg_
 $res = pg_query_params($conn, $sql, [$id]);
 $row = pg_fetch_assoc($res);
 
-if (!$row) die("Record not found.");
+if (!$row) {
+    die("Record not found.");
+}
 
 // Fetch subtables data if defined
 $subtablesData = [];
@@ -82,19 +92,24 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
         $sTable = $sub['table'];
         $sFk = $sub['foreign_key'];
         $sCols = $sub['columns_to_show'] ?? ['id'];
-        
-        if (!isset($schema['tables'][$sTable])) continue;
+
+        if (!isset($schema['tables'][$sTable])) {
+            continue;
+        }
         $sSchema = $schema['tables'][$sTable]['schema'] ?? 'public';
         $sTableCfg = $schema['tables'][$sTable];
-        
+
         $selCols = array_merge(['id'], $sCols);
         $selColsSql = implode(', ', array_map('pg_ident', array_unique($selCols)));
-        
+
         $sSql = sprintf(
             'SELECT %s FROM "%s"."%s" WHERE %s = $1 ORDER BY id DESC',
-            $selColsSql, $sSchema, $sTable, pg_ident($sFk)
+            $selColsSql,
+            $sSchema,
+            $sTable,
+            pg_ident($sFk)
         );
-        
+
         $sRes = pg_query_params($conn, $sSql, [$id]);
         $sRows = [];
         if ($sRes) {
@@ -103,10 +118,10 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
             }
             pg_free_result($sRes);
         }
-        
+
         // Map foreign keys for display
         $sRows = map_fk_display($schema, $sTableCfg, $sRows);
-        
+
         $subtablesData[] = [
             'config' => $sub,
             'rows' => $sRows,
@@ -127,8 +142,8 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
 
 <header>
     <a href="index.php" class="brand-logo">
-		<img src="assets/img/logo-blue.png" alt="OpenSparrow Logo" />
-	</a>
+        <img src="assets/img/logo-blue.png" alt="OpenSparrow Logo" />
+    </a>
     <div class="header-user-menu">
         <button onclick="window.history.back()" class="btn-logout">Back</button>
     </div>
@@ -137,7 +152,7 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
 <main style="padding: 20px; max-width: 1000px; margin: 0 auto;">
     <h2>Edit record #<?php echo htmlspecialchars((string)$id); ?> in <?php echo htmlspecialchars($tableCfg['display_name'] ?? $table); ?></h2>
 
-    <?php if ($error): ?>
+    <?php if ($error) : ?>
         <div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #fee;">
             Error: <?php echo htmlspecialchars($error); ?>
         </div>
@@ -145,13 +160,15 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
 
     <div class="form-wrapper">
         <form method="POST" class="editor-form">
-            <?php foreach ($tableCfg['columns'] as $colName => $colCfg): ?>
+            <?php foreach ($tableCfg['columns'] as $colName => $colCfg) : ?>
                 <?php
-                if (isset($colCfg['show_in_edit']) && $colCfg['show_in_edit'] === false) continue;
-                
+                if (isset($colCfg['show_in_edit']) && $colCfg['show_in_edit'] === false) {
+                    continue;
+                }
+
                 $type = strtolower($colCfg['type'] ?? '');
                 $val = $row[$colName] ?? '';
-                
+
                 $readOnlyAttr = !empty($colCfg['readonly']) ? 'readonly' : '';
                 $disabledAttr = !empty($colCfg['readonly']) ? 'disabled' : '';
                 $requiredAttr = (!empty($colCfg['not_null']) && empty($colCfg['readonly'])) ? 'required' : '';
@@ -159,37 +176,39 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">
                         <?php echo htmlspecialchars($colCfg['display_name'] ?? $colName); ?>
-                        <?php if ($requiredAttr) echo '<span style="color:red;">*</span>'; ?>
+                        <?php if ($requiredAttr) {
+                            echo '<span style="color:red;">*</span>';
+                        } ?>
                     </label>
 
-                    <?php if (isset($tableCfg['foreign_keys'][$colName])): ?>
+                    <?php if (isset($tableCfg['foreign_keys'][$colName])) : ?>
                         <?php
                         $fkCfg = $tableCfg['foreign_keys'][$colName];
                         $refTable = $fkCfg['reference_table'];
                         $refPk = $fkCfg['reference_column'] ?? 'id';
                         $refDisplay = $fkCfg['display_column'] ?? $refPk;
-                        
+
                         $refSql = sprintf('SELECT %s, %s FROM "app"."%s" ORDER BY %s ASC', pg_ident($refPk), pg_ident($refDisplay), $refTable, pg_ident($refDisplay));
                         $refRes = pg_query($conn, $refSql);
                         ?>
                         <select name="<?php echo $colName; ?>" <?php echo $requiredAttr; ?> <?php echo $disabledAttr; ?> style="width: 100%; padding: 8px;">
                             <option value="">-- Select --</option>
-                            <?php while ($refRow = pg_fetch_assoc($refRes)): ?>
+                            <?php while ($refRow = pg_fetch_assoc($refRes)) : ?>
                                 <?php $selected = ((string)$val === (string)$refRow[$refPk]) ? 'selected' : ''; ?>
                                 <option value="<?php echo htmlspecialchars((string)$refRow[$refPk]); ?>" <?php echo $selected; ?>>
                                     <?php echo htmlspecialchars((string)$refRow[$refDisplay]); ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
-                        <?php if (!empty($colCfg['readonly'])): ?>
+                        <?php if (!empty($colCfg['readonly'])) : ?>
                             <input type="hidden" name="<?php echo $colName; ?>" value="<?php echo htmlspecialchars((string)$val); ?>" />
                         <?php endif; ?>
 
-                    <?php elseif ($type === 'enum' || str_starts_with($type, 'enum')): ?>
+                    <?php elseif ($type === 'enum' || str_starts_with($type, 'enum')) : ?>
                         <select name="<?php echo $colName; ?>" <?php echo $requiredAttr; ?> <?php echo $disabledAttr; ?> style="width: 100%; padding: 8px;">
                             <option value="">-- Select --</option>
-                            <?php if (!empty($colCfg['options']) && is_array($colCfg['options'])): ?>
-                                <?php foreach ($colCfg['options'] as $opt): ?>
+                            <?php if (!empty($colCfg['options']) && is_array($colCfg['options'])) : ?>
+                                <?php foreach ($colCfg['options'] as $opt) : ?>
                                     <?php $selected = ((string)$val === (string)$opt) ? 'selected' : ''; ?>
                                     <option value="<?php echo htmlspecialchars((string)$opt); ?>" <?php echo $selected; ?>>
                                         <?php echo htmlspecialchars((string)$opt); ?>
@@ -197,21 +216,21 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </select>
-                        <?php if (!empty($colCfg['readonly'])): ?>
+                        <?php if (!empty($colCfg['readonly'])) : ?>
                             <input type="hidden" name="<?php echo $colName; ?>" value="<?php echo htmlspecialchars((string)$val); ?>" />
                         <?php endif; ?>
 
-                    <?php elseif (str_contains($type, 'bool')): ?>
+                    <?php elseif (str_contains($type, 'bool')) : ?>
                         <?php $checked = ($val === 't' || $val === 'true' || $val === true || $val === '1') ? 'checked' : ''; ?>
                         <input type="checkbox" name="<?php echo $colName; ?>" <?php echo $disabledAttr; ?> <?php echo $checked; ?> />
-                        <?php if (!empty($colCfg['readonly'])): ?>
+                        <?php if (!empty($colCfg['readonly'])) : ?>
                             <input type="hidden" name="<?php echo $colName; ?>" value="<?php echo htmlspecialchars((string)$val); ?>" />
                         <?php endif; ?>
                         
-                    <?php elseif (str_contains($type, 'date')): ?>
+                    <?php elseif (str_contains($type, 'date')) : ?>
                         <input type="date" name="<?php echo $colName; ?>" value="<?php echo htmlspecialchars((string)$val); ?>" <?php echo $requiredAttr; ?> <?php echo $readOnlyAttr; ?> style="width: 100%; padding: 8px;" />
                         
-                    <?php else: ?>
+                    <?php else : ?>
                         <input type="text" name="<?php echo $colName; ?>" value="<?php echo htmlspecialchars((string)$val); ?>" <?php echo $requiredAttr; ?> <?php echo $readOnlyAttr; ?> style="width: 100%; padding: 8px;" />
                         
                     <?php endif; ?>
@@ -225,9 +244,9 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
         </form>
     </div>
 
-<?php foreach ($subtablesData as $sd): ?>
+<?php foreach ($subtablesData as $sd) : ?>
         <div class="subtable-container" style="margin-top: 40px;">
-            <?php 
+            <?php
                 $sTable = $sd['config']['table'];
                 $sFk = $sd['config']['foreign_key'];
                 $sCols = $sd['config']['columns_to_show'] ?? ['id'];
@@ -240,23 +259,23 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
                 </a>
             </div>
 
-            <?php if (empty($sd['rows'])): ?>
+            <?php if (empty($sd['rows'])) : ?>
                 <p style="color: var(--muted); font-size: 14px; margin-top: 10px;">No records found.</p>
-            <?php else: ?>
+            <?php else : ?>
                 <div class="edit-subtable-wrapper">
                     <table>
                         <thead>
                             <tr>
-                                <?php foreach ($sCols as $c): ?>
+                                <?php foreach ($sCols as $c) : ?>
                                     <th><?php echo htmlspecialchars($sd['schema']['columns'][$c]['display_name'] ?? $c); ?></th>
                                 <?php endforeach; ?>
                                 <th style="width: 80px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($sd['rows'] as $r): ?>
+                            <?php foreach ($sd['rows'] as $r) : ?>
                                 <tr>
-                                    <?php foreach ($sCols as $c): ?>
+                                    <?php foreach ($sCols as $c) : ?>
                                         <?php $displayVal = $r[$c . '__display'] ?? $r[$c] ?? ''; ?>
                                         <td><?php echo htmlspecialchars((string)$displayVal); ?></td>
                                     <?php endforeach; ?>
@@ -270,7 +289,7 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
                 </div>
             <?php endif; ?>
         </div>
-    <?php endforeach; ?>
+<?php endforeach; ?>
 
 </main>
 
