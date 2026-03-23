@@ -28,15 +28,9 @@ Demo: http://www.demo.opensparrow.org
 
 ---
 
-## Dashboard Preview
+## Preview
 
-<img width="1899" height="869" alt="OpenSparrow data grid" src="assets/img/grid.png" />
-Grid view.
-
-<br /><br />
-
-<img width="1893" height="850" alt="OpenSparrow dashboard and admin panel" src="https://github.com/user-attachments/assets/cdfcbf8f-e4fa-4897-8a03-98e5f8357ab2" />
-Admin panel.
+<img width="1536" height="1024" alt="opensparrow_screen" src="https://github.com/user-attachments/assets/d162cb35-a572-4cc8-aa16-6592b885a7ef" />
 
 ---
 
