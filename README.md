@@ -22,7 +22,7 @@
 
 ## Overview
 
-OpenSparrow is a JSON schema-driven platform for internal systems such as CRM and ERP tools. Define your tables and relations once, and OpenSparrow generates data grids, forms, dashboard widgets, and calendar views.
+OpenSparrow is a JSON schema-driven platform for building robust internal systems. It is designed to empower SMEs and organizations with **Digital Sovereignty** by providing a high-performance, self-hosted alternative to proprietary SaaS platforms. By decoupling business logic from the infrastructure, OpenSparrow ensures you maintain 100% ownership of your data and tools without vendor lock-in.
 
 Demo: http://www.demo.opensparrow.org
 
@@ -44,6 +44,8 @@ Demo: http://www.demo.opensparrow.org
 - **Visual Admin Panel:** Manage schema, dashboards, calendar settings, users, and security options from `/admin`.
 - **Audit Logging:** Data changes are tracked in internal log tables for traceability.
 - **Export and Navigation Tools:** Use CSV export and pagination modules for day-to-day data operations.
+- **Standards-Based Interoperability:** (Planned) Built-in REST API and Webhook engine to prevent data silos and integrate with n8n, Make, or custom scripts.
+- **Inclusive Design:** Focused on WCAG 2.1 compliance to ensure internal tools are accessible to everyone, including users with disabilities.
 
 ---
 
@@ -97,11 +99,6 @@ If you have Docker installed, you can start the entire stack with a single comma
 # Set permissions and start containers
 sudo chown -R 82:82 includes/ && docker compose up -d --build
 ```
-
-Security Note
-1. The includes/ directory stores database.json and dashboard.json.
-2. .htaccess file is included to block public web access to these files.
-3. Important: Ensure includes/*.json is added to your .gitignore before committing changes to avoid leaking credentials.
 
 The app will be available at: http://localhost:8080
 
@@ -179,6 +176,15 @@ After setup:
 On a fresh install, a default app user is seeded automatically (username: `test`).
 Use these credentials to log into the main app at `login.php`.
 Change them before going to production.
+
+---
+
+### Security & Configuration
+
+Currently, settings are stored in `includes/database.json`. Access is restricted via `.htaccess`. 
+
+- **Production Tip:** Ensure your web server is configured to deny public web access to the `includes/` directory. 
+- **Planned Improvement:** Moving towards full Environment Variable (`.env`) support for improved security in containerized and cloud-native environments.
 
 ---
 
