@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Login | OpenSparrow</title>
+    <title>OpenSparrow | Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="assets/css/styles.css" rel="stylesheet" /> 
     <style>

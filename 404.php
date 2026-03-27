@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>404 - Page Not Found | OpenSparrow</title>
+    <title>OpenSparrow | 404 - Page Not Found</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="/assets/css/styles.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico">

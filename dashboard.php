@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Sparrow | Dashboard | Open source</title>
+    <title>OpenSparrow | Dashboard | Open source</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="/assets/css/styles.css" rel="stylesheet" />
     <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />

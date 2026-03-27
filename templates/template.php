@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Sparrow | Open source | PHP + vanilla JS + Postgres</title>
+    <title>OpenSparrow | Open source | PHP + vanilla JS + Postgres</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="/assets/css/styles.css" rel="stylesheet" />
     <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />

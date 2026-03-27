@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Calendar | Sparrow</title>
+    <title>OpenSparrow | Calendar</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="assets/css/styles.css" rel="stylesheet" />
     <style>

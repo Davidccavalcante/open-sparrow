@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Add Record - <?php echo htmlspecialchars($tableCfg['display_name'] ?? $table); ?></title>
+    <title>OpenSparrow | Add Record - <?php echo htmlspecialchars($tableCfg['display_name'] ?? $table); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/assets/css/styles.css" rel="stylesheet">
 </head>

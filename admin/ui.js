@@ -89,7 +89,7 @@ export function createIconPicker(key, labelText, value, onChange) {
     input.addEventListener('input', (e) => onChange(e.target.value));
 
     const btn = document.createElement('button');
-    btn.textContent = '🖼️ Przeglądaj';
+    btn.textContent = 'Browse';
     btn.type = 'button';
     btn.className = 'btn-add';
     btn.style.margin = '0';
@@ -102,12 +102,12 @@ export function createIconPicker(key, labelText, value, onChange) {
         content.style.cssText = `background:#fff; padding:20px; border-radius:8px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);`;
         
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = '✖ Zamknij';
+        closeBtn.textContent = 'Close';
         closeBtn.style.cssText = `position:absolute; top:15px; right:15px; background:#dc2626; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;`;
         closeBtn.onclick = () => modal.remove();
         content.appendChild(closeBtn);
         
-        content.innerHTML += '<h3 style="margin-top:0;">Wybierz Ikonę</h3><p style="color:#777; font-size:13px;">Ikony pobierane są z <code>assets/icons/</code> oraz <code>assets/img/</code>.</p>';
+        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#777; font-size:13px;">Icons are loaded from <code>assets/icons/</code> and <code>assets/img/</code>.</p>';
         
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
@@ -137,10 +137,10 @@ export function createIconPicker(key, labelText, value, onChange) {
                     grid.appendChild(imgBox);
                 });
             } else {
-                grid.innerHTML = '<p style="grid-column: 1 / -1; color:#777;">Brak ikon. Utwórz folder <code>assets/icons/</code> w głównym katalogu i wrzuć tam pliki (PNG, SVG, JPG).</p>';
+                grid.innerHTML = '<p style="grid-column: 1 / -1; color:#777;">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
             }
         } catch(e) {
-            grid.innerHTML = '<p style="color:red; grid-column: 1 / -1;">Wystąpił błąd podczas ładowania ikon.</p>';
+            grid.innerHTML = '<p style="color:red; grid-column: 1 / -1;">An error occurred while loading icons.</p>';
         }
         
         content.appendChild(grid);

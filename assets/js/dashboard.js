@@ -1,9 +1,10 @@
 // assets/js/dashboard.js
 
+// Initialize the dashboard and fetch widget configuration
 async function initDashboard() {
     const container = document.getElementById('dashboardSection');
     if (!container) {
-        console.error("Błąd: Nie znaleziono kontenera #dashboardSection");
+        console.error("Error: Container #dashboardSection not found");
         return;
     }
 
@@ -13,7 +14,7 @@ async function initDashboard() {
         const config = await response.json();
 
         if (!config || !config.widgets || config.widgets.length === 0) {
-            container.innerHTML = '<p>Brak skonfigurowanych widżetów w dashboard.json.</p>';
+            container.innerHTML = '<p>No widgets configured in dashboard.json.</p>';
             return;
         }
 
@@ -43,18 +44,21 @@ async function initDashboard() {
                     widgetEl.appendChild(renderList(widget));
                     break;
                 default:
-                    widgetEl.innerHTML += `<p>Nieznany typ widgetu: ${widget.type}</p>`;
+                    const err = document.createElement('p');
+                    err.textContent = `Unknown widget type: ${widget.type}`;
+                    widgetEl.appendChild(err);
             }
 
             container.appendChild(widgetEl);
         });
 
     } catch (error) {
-        console.error('Błąd ładowania dashboardu:', error);
-        container.innerHTML = '<p style="color:red;">Wystąpił błąd podczas ładowania danych dashboardu.</p>';
+        console.error('Error loading dashboard:', error);
+        container.innerHTML = '<p style="color:red;">An error occurred while loading dashboard data.</p>';
     }
 }
 
+// Render a Key Performance Indicator (KPI) card
 function renderKPICard(widget) {
     const wrapper = document.createElement('div');
     wrapper.className = 'kpi-card';
@@ -72,22 +76,38 @@ function renderKPICard(widget) {
     info.appendChild(title);
     info.appendChild(value);
 
-    const icon = document.createElement('div');
-    icon.className = 'kpi-icon';
-    icon.textContent = widget.icon || '📊';
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'kpi-icon';
+    iconContainer.style.width = '32px';
+    iconContainer.style.height = '32px';
+    iconContainer.style.display = 'flex';
+    iconContainer.style.alignItems = 'center';
+    iconContainer.style.justifyContent = 'center';
+    
+    // Render icon as an image if path is provided
+    if (widget.icon && widget.icon.trim() !== '') {
+        const img = document.createElement('img');
+        img.src = widget.icon;
+        img.alt = 'Icon';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.style.objectFit = 'contain';
+        iconContainer.appendChild(img);
+    }
 
     wrapper.appendChild(info);
-    wrapper.appendChild(icon);
+    wrapper.appendChild(iconContainer);
     return wrapper;
 }
 
+// Render a horizontal bar chart
 function renderBarChart(widget) {
     const wrapper = document.createElement('div');
     wrapper.className = 'bar-chart';
     const data = widget.data || [];
 
     if (data.length === 0) {
-        wrapper.textContent = 'Brak danych';
+        wrapper.textContent = 'No data';
         return wrapper;
     }
 
@@ -99,7 +119,7 @@ function renderBarChart(widget) {
 
         const label = document.createElement('div');
         label.className = 'bar-label';
-        label.textContent = row.label || 'Brak';
+        label.textContent = row.label || 'None';
 
         const track = document.createElement('div');
         track.className = 'bar-track';
@@ -113,6 +133,7 @@ function renderBarChart(widget) {
         
         const percent = maxVal > 0 ? (row.value / maxVal) * 100 : 0;
         
+        // Timeout to trigger CSS transition animation
         setTimeout(() => { bar.style.width = `${percent}%`; }, 50);
 
         const val = document.createElement('div');
@@ -129,6 +150,7 @@ function renderBarChart(widget) {
     return wrapper;
 }
 
+// Render a simple data list
 function renderList(widget) {
     const wrapper = document.createElement('div');
     wrapper.className = 'dash-list';
@@ -140,13 +162,14 @@ function renderList(widget) {
     const data = widget.data || [];
 
     if (data.length === 0) {
-        wrapper.textContent = 'Brak danych';
+        wrapper.textContent = 'No data';
         return wrapper;
     }
 
     const ul = document.createElement('ul');
     data.forEach(row => {
         const li = document.createElement('li');
+        // Safely extract and join columns configured in dashboard setup
         li.textContent = widget.display_columns.map(col => row[col] || '').join(' - ');
         ul.appendChild(li);
     });
@@ -155,4 +178,5 @@ function renderList(widget) {
     return wrapper;
 }
 
+// Initialize when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initDashboard);

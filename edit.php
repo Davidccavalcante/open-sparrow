@@ -134,7 +134,7 @@ if (!empty($tableCfg['subtables']) && is_array($tableCfg['subtables'])) {
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Edit Record - <?php echo htmlspecialchars($tableCfg['display_name'] ?? $table); ?></title>
+    <title>OpenSparrow | Edit Record - <?php echo htmlspecialchars($tableCfg['display_name'] ?? $table); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="/assets/css/styles.css" rel="stylesheet">
 </head>
