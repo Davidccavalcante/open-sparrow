@@ -40,3 +40,7 @@ include/php.ini
 phpcs.phar
 phpcbf.phar
 *.json
+includes/calendar.json
+includes/dashboard.json
+includes/database.json
+includes/schema.json
