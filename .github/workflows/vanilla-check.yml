@@ -19,12 +19,8 @@ jobs:
           
           echo "Scanning assets and templates for forbidden frameworks..."
           
-          if grep -Ei "$FORBIDDEN" -r . --exclude-dir={.git,vendor,node_modules}; then
-            echo "--------------------------------------------------------"
+          if grep -Eiw "$FORBIDDEN" -r . --exclude-dir={.git,vendor,node_modules}; then
             echo "ERROR: Forbidden library detected!"
-            echo "This project strictly follows a Vanilla (no-framework) policy."
-            echo "Please use native Web APIs (fetch, Intl, CSS Grid/Flexbox)."
-            echo "--------------------------------------------------------"
             exit 1
           else
             echo "Clean code! No unauthorized libraries found."
