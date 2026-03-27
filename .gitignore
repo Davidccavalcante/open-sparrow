@@ -39,3 +39,4 @@ include/php.ini
 # CodeSniffer
 phpcs.phar
 phpcbf.phar
+*.json
